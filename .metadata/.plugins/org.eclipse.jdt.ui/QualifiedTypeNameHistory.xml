@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="processing.core.PApplet"/>
+<fullyQualifiedTypeName name="de.fhpotsdam.unfolding.UnfoldingMap"/>
+<fullyQualifiedTypeName name="de.fhpotsdam.unfolding.providers.Google.GoogleMapProvider"/>
+<fullyQualifiedTypeName name="de.fhpotsdam.unfolding.utils.MapUtils"/>
+<fullyQualifiedTypeName name="de.fhpotsdam.unfolding.providers.Google"/>
+<fullyQualifiedTypeName name="java.util.Map"/>
+<fullyQualifiedTypeName name="java.util.List"/>
+<fullyQualifiedTypeName name="de.fhpotsdam.unfolding.marker.Marker"/>
+<fullyQualifiedTypeName name="de.fhpotsdam.unfolding.data.Feature"/>
+<fullyQualifiedTypeName name="de.fhpotsdam.unfolding.data.GeoJSONReader"/>
+<fullyQualifiedTypeName name="java.util.HashMap"/>
+</qualifiedTypeNameHistroy>
