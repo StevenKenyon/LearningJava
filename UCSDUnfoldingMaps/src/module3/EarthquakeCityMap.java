@@ -13,11 +13,13 @@ import java.util.List;
 
 //Processing library
 import processing.core.PApplet;
-
+import processing.core.PShape;
 //Unfolding libraries
 import de.fhpotsdam.unfolding.UnfoldingMap;
 import de.fhpotsdam.unfolding.marker.Marker;
+import de.fhpotsdam.unfolding.marker.AbstractMarker;
 import de.fhpotsdam.unfolding.data.PointFeature;
+import de.fhpotsdam.unfolding.geo.Location;
 import de.fhpotsdam.unfolding.marker.SimplePointMarker;
 import de.fhpotsdam.unfolding.providers.Google;
 import de.fhpotsdam.unfolding.providers.MBTilesMapProvider;
@@ -44,6 +46,7 @@ public class EarthquakeCityMap extends PApplet {
 	public static final float THRESHOLD_MODERATE = 5;
 	// Less than this threshold is a minor earthquake
 	public static final float THRESHOLD_LIGHT = 4;
+	
 
 	/** This is where to find the local tiles, for working without an Internet connection */
 	public static String mbTilesString = "blankLight-1-3.mbtiles";
@@ -51,8 +54,25 @@ public class EarthquakeCityMap extends PApplet {
 	// The map
 	private UnfoldingMap map;
 	
+	// The Key
+	PShape body;
+	
+	//Colors
+	private int blueColor = color(0, 0, 255);
+	private int yellowColor = color(255, 255, 0);
+	private int redColor = color(204, 0, 0);
+	private int whiteColor = color(255, 255, 255);
+	private int blackColor = color(0, 0, 0);
+	
+	//Size markers
+	private int minorSize = 5;
+	private int lightSize = 9;
+	private int moderateSize = 12;
+	
 	//feed with magnitude 2.5+ Earthquakes
 	private String earthquakesURL = "http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.atom";
+	
+	
 
 	
 	public void setup() {
@@ -86,13 +106,22 @@ public class EarthquakeCityMap extends PApplet {
 	    	Object magObj = f.getProperty("magnitude");
 	    	float mag = Float.parseFloat(magObj.toString());
 	    	// PointFeatures also have a getLocation method
+	    	
 	    }
 	    
 	    // Here is an example of how to use Processing's color method to generate 
 	    // an int that represents the color yellow.  
-	    int yellow = color(255, 255, 0);
+	    //int yellow = color(255, 255, 0);
 	    
 	    //TODO: Add code here as appropriate
+	    //System.out.println("earthquakes.size:" + earthquakes.size());
+	    //Add the points to the map
+	    for(int e = 0; e < earthquakes.size(); e++)
+	    {
+	    	PointFeature pf = earthquakes.get(e);
+	    	SimplePointMarker spm = createMarker(pf);
+	    	map.addMarker(spm);
+	    }
 	}
 		
 	// A suggested helper method that takes in an earthquake feature and 
@@ -101,9 +130,37 @@ public class EarthquakeCityMap extends PApplet {
 	private SimplePointMarker createMarker(PointFeature feature)
 	{
 		// finish implementing and use this method, if it helps.
-		return new SimplePointMarker(feature.getLocation());
+		SimplePointMarker output = new SimplePointMarker(feature.getLocation());
+		
+    	Object magObj = feature.getProperty("magnitude");
+    	float mag = Float.parseFloat(magObj.toString());
+    	
+    	//Minor earthquakes (less than magnitude 4.0) will have blue markers and be small.
+    	if(mag < THRESHOLD_LIGHT)
+    	{
+			output.setColor(blueColor);//blue
+			output.setStrokeColor(blueColor);//blue
+			output.setRadius(minorSize);
+    	}
+    	//Light earthquakes (between 4.0-4.9) will have yellow markers and be medium.
+    	else if((mag >= THRESHOLD_LIGHT) 
+    			&& (mag < THRESHOLD_MODERATE))
+    	{
+    		output.setColor(yellowColor);//yellow
+    		output.setStrokeColor(yellowColor);//yellow
+    		output.setRadius(lightSize);
+    	}
+    	//Moderate and higher earthquakes (5.0 and over) will have red markers and be largest.
+    	else
+    	{
+    		output.setColor(redColor);//red
+    		output.setStrokeColor(redColor);//red
+    		output.setRadius(moderateSize);
+    	}    	
+		return output;
 	}
-	
+
+	//Draw the GUI
 	public void draw() {
 	    background(10);
 	    map.draw();
@@ -116,6 +173,28 @@ public class EarthquakeCityMap extends PApplet {
 	private void addKey() 
 	{	
 		// Remember you can use Processing's graphics methods here
-	
+		
+		//Header text
+		textSize(15);
+		fill(whiteColor);
+		text("Earthquake Key:", 50, 60);
+		
+		//Key info
+		textSize(14);
+		fill(redColor);
+		ellipse(50, 95, moderateSize, moderateSize);
+		fill(whiteColor);
+		text("5+ Mag", 70, 100);		
+
+		fill(yellowColor);
+		ellipse(50, 135, lightSize, lightSize);
+		fill(whiteColor);
+		text("4+ Mag", 70, 140);
+
+		fill(blueColor);
+		ellipse(50, 175, minorSize, minorSize);
+		fill(whiteColor);
+		text("Below 4 Mag", 70, 180);
+		
 	}
 }
