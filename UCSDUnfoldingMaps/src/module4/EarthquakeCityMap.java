@@ -1,7 +1,9 @@
 package module4;
 
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
 
 import de.fhpotsdam.unfolding.UnfoldingMap;
 import de.fhpotsdam.unfolding.data.Feature;
@@ -60,6 +62,9 @@ public class EarthquakeCityMap extends PApplet {
 	// A List of country markers
 	private List<Marker> countryMarkers;
 	
+	// count of countries (or the ocean) where earthquakes occured
+	private Hashtable<String, Integer> quakeCounter;
+	
 	public void setup() {		
 		// (1) Initializing canvas and map tiles
 		size(900, 700, OPENGL);
@@ -111,6 +116,7 @@ public class EarthquakeCityMap extends PApplet {
 	    }
 
 	    // could be used for debugging
+	    quakeCounter = new Hashtable<String, Integer>();
 	    printQuakes();
 	 		
 	    // (3) Add markers to map
@@ -118,6 +124,10 @@ public class EarthquakeCityMap extends PApplet {
 	    //           for their geometric properties
 	    map.addMarkers(quakeMarkers);
 	    map.addMarkers(cityMarkers);
+	    String quakes = String.valueOf(quakeMarkers.size()) ;
+	    String cityCount = String.valueOf(cityMarkers.size());
+	    System.out.println("quakes: " + quakes);
+	    System.out.println("cityCount: " + cityCount);
 	    
 	}  // End setup
 	
@@ -164,10 +174,22 @@ public class EarthquakeCityMap extends PApplet {
 		
 		// IMPLEMENT THIS: loop over all countries to check if location is in any of them
 		
-		// TODO: Implement this method using the helper method isInCountry
-		
-		// not inside any country
-		return false;
+		// Done: Implement this method using the helper method isInCountry
+		boolean quakeOnLand = false;
+		for(int i = 0; i < countryMarkers.size(); i++)
+		{
+			if(this.isInCountry(earthquake, countryMarkers.get(i)))
+			{				
+				quakeOnLand = true;
+				//System.out.println(earthquake.getProperties());
+				
+			}
+			else
+			{
+				//System.out.println(earthquake.getProperties());
+			}
+		}
+		return quakeOnLand;
 	}
 	
 	// prints countries with number of earthquakes
@@ -179,9 +201,52 @@ public class EarthquakeCityMap extends PApplet {
 	private void printQuakes() 
 	{
 		// TODO: Implement this method
+		// Create a hash table of int's for the countries
+		// if not exist, add with value of 1
+		// if exist increment the existing value
+		//Hashtable<String, Integer> quakeCounter = new Hashtable<String, Integer>();
+		for(int i = 0; i < quakeMarkers.size(); i++)
+		{
+			String theCountry = (String) quakeMarkers.get(i).getProperty("country");
+			if(theCountry == null) //Inc the number if it's a quake in the ocean.
+			{
+				incValueInQuakeCounterTable("In the Ocean");
+			}
+			else
+			{
+				incValueInQuakeCounterTable(theCountry);
+			}
+		}
+		//Print the counts
+		Set<String> keys = quakeCounter.keySet();
+		for(String key: keys)
+		{
+			System.out.println(key + ": " + quakeCounter.get(key));
+		}
 	}
 	
-	
+	/**
+	 * Increment a value in a class level hash table.
+	 * If the value does not exist in the table, set it to 1.
+	 * @param table
+	 * @param key
+	 * @return
+	 */
+	private void incValueInQuakeCounterTable(String key)
+	{
+		if(quakeCounter.containsKey(key))
+		{
+			int currentVal = quakeCounter.get(key);
+			quakeCounter.remove(key);
+			currentVal++;
+			quakeCounter.put(key, currentVal);
+		}
+		else //Set value to one if it doesn't exist.
+		{
+			quakeCounter.put(key, 1);
+		}		
+		//return table;
+	}
 	
 	// helper method to test whether a given earthquake is in a given country
 	// This will also add the country property to the properties of the earthquake 
@@ -216,5 +281,4 @@ public class EarthquakeCityMap extends PApplet {
 		}
 		return false;
 	}
-
 }
