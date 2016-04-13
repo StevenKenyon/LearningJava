@@ -151,17 +151,31 @@ public class EarthquakeCityMap extends PApplet {
 		textSize(12);
 		text("Earthquake Key", 50, 75);
 		
-		fill(color(255, 0, 0));
-		ellipse(50, 125, 15, 15);
-		fill(color(255, 255, 0));
-		ellipse(50, 175, 10, 10);
-		fill(color(0, 0, 255));
-		ellipse(50, 225, 5, 5);
-		
+		//city marker
 		fill(0, 0, 0);
-		text("5.0+ Magnitude", 75, 125);
-		text("4.0+ Magnitude", 75, 175);
-		text("Below 4.0", 75, 225);
+		text("City Marker", 75, 125);
+		int x = 40;
+		int y = 115;
+		fill(color(255, 0, 0));
+		triangle(x, y + 20, x + 20, y + 10, x, y);
+		
+		//land quake
+		fill(0, 0, 0);
+		text("Land Quake", 75, 155);
+		y = 160;
+		int radius = 15;
+		noFill();
+		ellipse(x + 7, y, radius, radius);
+		
+		//ocean quake
+		fill(0, 0, 0);
+		text("Ocean Quake", 75, 185);
+		y = 180;
+		noFill();
+		rect(x, y, radius, radius);
+		//Note on size
+		fill(0, 0, 0);
+		text("Size ~ Magnitude", 55, 225);		
 	}
 
 	
