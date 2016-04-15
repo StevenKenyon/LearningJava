@@ -80,21 +80,26 @@ public abstract class EarthquakeMarker extends CommonMarker
 			pg.line(x-(radius+buffer), 
 					y+(radius+buffer), 
 					x+radius+buffer, 
-					y-(radius+buffer));
-			
+					y-(radius+buffer));			
 		}
 		
 		// reset to previous styling
-		pg.popStyle();
-		
+		pg.popStyle();		
 	}
 
 	/** Show the title of the earthquake if this marker is selected */
 	@Override
 	public void showTitle(PGraphics pg, float x, float y)
 	{
-		// TODO: Implement this method
-		
+		// Done: Implement this method
+		String theTitle = this.getTitle();
+		pg.fill(255);
+		int distFromMouse = 15;
+		int lengthOfBox = theTitle.length() * 7;
+		pg.rect(x + distFromMouse, y, lengthOfBox, 25);
+		pg.fill(0);
+		pg.textSize(12);
+		pg.text(theTitle, x + distFromMouse, y + 15);
 	}
 
 	
@@ -153,8 +158,4 @@ public abstract class EarthquakeMarker extends CommonMarker
 	{
 		return isOnLand;
 	}
-	
-
-	
-	
 }

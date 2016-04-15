@@ -11,17 +11,36 @@ import de.fhpotsdam.unfolding.geo.Location;
 import de.fhpotsdam.unfolding.marker.AbstractShapeMarker;
 import de.fhpotsdam.unfolding.marker.Marker;
 import de.fhpotsdam.unfolding.marker.MultiMarker;
+import de.fhpotsdam.unfolding.marker.SimplePointMarker;
 import de.fhpotsdam.unfolding.providers.Google;
 import de.fhpotsdam.unfolding.providers.MBTilesMapProvider;
 import de.fhpotsdam.unfolding.utils.MapUtils;
+import module4.CityMarker;
 import parsing.ParseFeed;
 import processing.core.PApplet;
 
 /** EarthquakeCityMap
  * An application with an interactive map displaying earthquake data.
  * Author: UC San Diego Intermediate Software Development MOOC team
- * @author Your name here
- * Date: July 17, 2015
+ * @author Steven Kenyon
+ * Date: April 15, 2016
+ * 
+ * Your map is about to become interactive! You are going to add functionality to your 
+ * map so that additional information is displayed when the user hovers over or clicks 
+ * on any marker with her/ his mouse. When she hovers over a city marker, your map will 
+ * display a box with the city’s name, country, and population. When she hovers over an 
+ * earthquake marker, your map will display the title of the earthquake (including its 
+ * magnitude and region). Clicking on a marker gives even more information: A click on 
+ * a city marker will lead to only that city and earthquakes which affect it being 
+ * displayed on the map. Clicking once again on that marker will bring the rest of the 
+ * map’s markers back. Similarly, after clicking on an earthquake marker, only cities 
+ * potentially affected by that earthquake will be displayed. You’ll use event-driven 
+ * programming to make this happen.
+ * 
+ * To accomplish this you will need to override two methods, mouseClicked() and 
+ * mouseMoved(). In both of the these methods you will need to make use of the 
+ * isInside() method of the SimplePointMarker class, as well as the PApplet fields, 
+ * mouseX and mouseY.
  * */
 public class EarthquakeCityMap extends PApplet {
 	
@@ -59,10 +78,11 @@ public class EarthquakeCityMap extends PApplet {
 	private List<Marker> countryMarkers;
 	
 	// NEW IN MODULE 5
-	private CommonMarker lastSelected;
+	private CommonMarker lastSelected; //selected means hovered over
 	private CommonMarker lastClicked;
+	//private CommonMarker theSelectedMarker;
 	
-	public void setup() {		
+	public void setup() {
 		// (1) Initializing canvas and map tiles
 		size(900, 700, OPENGL);
 		if (offline) {
@@ -86,7 +106,7 @@ public class EarthquakeCityMap extends PApplet {
 		List<Feature> cities = GeoJSONReader.loadData(this, cityFile);
 		cityMarkers = new ArrayList<Marker>();
 		for(Feature city : cities) {
-		  cityMarkers.add(new CityMarker(city));
+		  cityMarkers.add(new module5.CityMarker(city));
 		}
 	    
 		//     STEP 3: read in earthquake RSS feed
@@ -145,7 +165,33 @@ public class EarthquakeCityMap extends PApplet {
 	// 
 	private void selectMarkerIfHover(List<Marker> markers)
 	{
-		// TODO: Implement this method
+		// Done: Implement this method
+			//Rotate through all markers checking to see if the mouse is within
+			// the marker.
+			for(int i = 0; i < markers.size(); i++)
+			{
+				if (lastSelected == null) 
+				{
+					Marker theMarker = markers.get(i);
+					//If so mark it as selected using the setSelected() method
+					if(theMarker.isInside(map, (float)mouseX, (float)mouseY))
+					{
+						theMarker.setSelected(true);
+						lastSelected = (CommonMarker) theMarker;
+					}
+					else
+					{
+						theMarker.setSelected(false);
+					}
+				}
+			}		
+	}
+	
+	// method for testing - Draws a small white square on the map.
+	private void drawSquareForTesting()
+	{
+		fill(255, 255, 255);
+		rect(100, 100, 25, 25);		
 	}
 	
 	/** The event handler for mouse clicks
@@ -159,8 +205,168 @@ public class EarthquakeCityMap extends PApplet {
 		// TODO: Implement this method
 		// Hint: You probably want a helper method or two to keep this code
 		// from getting too long/disorganized
+		// If (lastClicked == null) set the marker as clicked and copy to lastClicked
+		// 		hide markers outside threat circle
+		if(lastClicked == null)// TODO: mark this not null and null with intelligence.
+		{
+			//was it a marker that was clicked? or just ocean/bare land
+			if(markerWasClicked(quakeMarkers) | markerWasClicked(cityMarkers))
+			{
+				System.out.println("Clicked a marker");
+				
+				// get specific marker that was clicked
+				Marker m = getMarkerThatWasClicked(quakeMarkers);
+				if(m == null) m = getMarkerThatWasClicked(cityMarkers);
+				
+				// hide non-threatening markers
+				boolean hiddenFine = hideNonthreatingMarkers(m);
+				// marker.getDistanceTo(otherMarker) gives distance.  combine with threatCircle() to choose
+				if(!hiddenFine) System.out.println("Error trying to hide markers!!!??");
+				lastClicked = (CommonMarker) m;
+			}
+		}
+		else // if (lastClicked != null) unhide all markers and deselect chosen marker and make lastClicked = null
+		{
+			System.out.println("Clicked a marker");
+			unhideMarkers();
+			lastClicked = null;			
+		}		
+	}
+	/**
+	 * Hides all the markers that are not within the threat Circle of the specified marker.
+	 * @param clickedMarker
+	 * @return
+	 */
+	private boolean hideNonthreatingMarkers(Marker clickedMarker)
+	{
+		boolean allHiddenFine = false;
+		//if a city marker rotate through all quakes to see if the city is 
+		//within any threat circle.
+		if(clickedMarker instanceof module5.CityMarker)
+		{
+			//hide quakes that don't affect this city
+			for(int i = 0; i < quakeMarkers.size(); i++)
+			{
+				EarthquakeMarker aQuake = (EarthquakeMarker) quakeMarkers.get(i);
+				if(isOutsideThreatCircle(aQuake, clickedMarker))
+				{
+					aQuake.setHidden(true);
+				}				
+			}
+			//hide other cities
+			boolean citiesHiddenFine = hideOtherCities((module5.CityMarker) clickedMarker);
+			if(!citiesHiddenFine) System.out.println("=== Issue Hiding Cities ===");
+		}
+		else if(clickedMarker instanceof LandQuakeMarker 
+				|| clickedMarker instanceof OceanQuakeMarker)
+		{
+			System.out.println("This is a LandQuake or OceanQuake Marker");
+			//Hide any quake that is not the selected quake
+			for(int i = 0; i < quakeMarkers.size(); i++)
+			{
+				Marker aQuake = quakeMarkers.get(i);
+				if(aQuake.getLocation() != clickedMarker.getLocation())
+				{
+					aQuake.setHidden(true);
+				}				
+			}
+			//Hide any city outside the threat circle
+			for(int i = 0; i < cityMarkers.size(); i++)
+			{
+				Marker aCity = cityMarkers.get(i);
+				if(isOutsideThreatCircle((EarthquakeMarker) clickedMarker, aCity))
+				{
+					aCity.setHidden(true);
+				}		
+			}
+		}
+		//if a quake marker compare to all other markers to see if any are within 
+		// any threat circle.
+		
+		allHiddenFine = true;
+		return allHiddenFine;		
+	}
+	/**
+	 * check to see if two markers are within the "threat circle"
+	 * @param em
+	 * @param m
+	 * @return
+	 */
+	private boolean isOutsideThreatCircle(EarthquakeMarker em, Marker m)
+	{
+		boolean isOutside = false;
+		double distTween = em.getDistanceTo(m.getLocation());
+		if(em.threatCircle() < distTween)//City is not within a quake's threat Circle
+		{
+			isOutside = true;
+		}		
+		return isOutside;		
 	}
 	
+	/**
+	 * Hide all cities except the passed "keeper" city.
+	 * @param keeper
+	 * @return
+	 */
+	private boolean hideOtherCities(Marker keeper)
+	{
+		boolean allGood = false;
+		for(int i = 0; i < cityMarkers.size(); i++)
+		{
+			module5.CityMarker aCity = (module5.CityMarker)cityMarkers.get(i);
+			if(keeper.getLocation() != aCity.getLocation())
+			{
+				aCity.setHidden(true);
+			}
+		}
+		allGood = true;
+		return allGood;
+	}
+	
+	// Check to see if the mouse is hovering over a marker RIGHT NOW.
+	// Probably should use the MouseClicked(MouseEvent e) constructor but that's not
+	// what the teachers are encouraging.
+	private boolean markerWasClicked(List<Marker> markers)
+	{		
+		boolean markerFound = false;
+		for(int i = 0; i < markers.size(); i++)
+		{
+			if(!markerFound)
+			{
+				Marker theMarker = markers.get(i);
+				if(theMarker.isInside(map, (float)mouseX, (float)mouseY))
+				{
+					markerFound = true;
+				}
+			}
+		}		
+		return markerFound;
+	}
+	
+	/**
+	 * Returns a marker based on where the mouse is currently hovering.
+	 * Returns a null value if none found.
+	 * @param markers
+	 * @return
+	 */
+	private Marker getMarkerThatWasClicked(List<Marker> markers)
+	{
+		boolean markerFound = false;
+		Marker returnMarker = null;
+		for(int i = 0; i < markers.size(); i++)
+		{
+			if(!markerFound)
+			{
+				Marker aMarker = markers.get(i);
+				if(aMarker.isInside(map, (float)mouseX, (float)mouseY))
+				{
+					returnMarker = aMarker;
+					markerFound = true;
+				}
+			}
+		}
+		return returnMarker;
+	}
 	
 	// loop over and unhide all markers
 	private void unhideMarkers() {
@@ -314,5 +520,4 @@ public class EarthquakeCityMap extends PApplet {
 		}
 		return false;
 	}
-
 }
