@@ -202,12 +202,12 @@ public class EarthquakeCityMap extends PApplet {
 	@Override
 	public void mouseClicked()
 	{
-		// TODO: Implement this method
+		// DONE: Implement this method
 		// Hint: You probably want a helper method or two to keep this code
 		// from getting too long/disorganized
 		// If (lastClicked == null) set the marker as clicked and copy to lastClicked
 		// 		hide markers outside threat circle
-		if(lastClicked == null)// TODO: mark this not null and null with intelligence.
+		if(lastClicked == null)//  Mark not null and null when used or not used.
 		{
 			//was it a marker that was clicked? or just ocean/bare land
 			if(markerWasClicked(quakeMarkers) | markerWasClicked(cityMarkers))
