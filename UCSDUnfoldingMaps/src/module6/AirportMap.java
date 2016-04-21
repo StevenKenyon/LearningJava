@@ -50,8 +50,7 @@ public class AirportMap extends PApplet {
 			airportList.add(m);
 			
 			// put airport in hashmap with OpenFlights unique id for key
-			airports.put(Integer.parseInt(feature.getId()), feature.getLocation());
-		
+			airports.put(Integer.parseInt(feature.getId()), feature.getLocation());		
 		}
 		
 		
@@ -75,13 +74,13 @@ public class AirportMap extends PApplet {
 			System.out.println(sl.getProperties());
 			
 			//UNCOMMENT IF YOU WANT TO SEE ALL ROUTES
-			//routeList.add(sl);
+			routeList.add(sl);
 		}
 		
 		
 		
 		//UNCOMMENT IF YOU WANT TO SEE ALL ROUTES
-		//map.addMarkers(routeList);
+		map.addMarkers(routeList);
 		
 		map.addMarkers(airportList);
 		

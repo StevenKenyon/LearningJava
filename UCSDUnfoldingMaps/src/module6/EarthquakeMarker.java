@@ -9,8 +9,8 @@ import processing.core.PGraphics;
  * @author UC San Diego Intermediate Software Development MOOC team
  *
  */
-// TODO: Implement the comparable interface
-public abstract class EarthquakeMarker extends CommonMarker
+// Done: Implement the comparable interface
+public abstract class EarthquakeMarker extends CommonMarker implements Comparable<EarthquakeMarker> 
 {
 	
 	// Did the earthquake occur on land?  This will be set by the subclasses.
@@ -55,9 +55,13 @@ public abstract class EarthquakeMarker extends CommonMarker
 		this.radius = 1.75f*getMagnitude();
 	}
 	
-	// TODO: Add the method:
-	// public int compareTo(EarthquakeMarker marker)
-	
+	// Done: Add the method:
+	public int compareTo(EarthquakeMarker marker)
+	{
+		String thisMag = Float.toString(this.getMagnitude());
+		String theMarkerMag = Float.toString(marker.getMagnitude());
+		return theMarkerMag.compareTo(thisMag);
+	}
 	
 	// calls abstract method drawEarthquake and then checks age and draws X if needed
 	@Override

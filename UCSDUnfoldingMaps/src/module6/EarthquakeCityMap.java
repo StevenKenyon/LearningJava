@@ -1,17 +1,18 @@
 package module6;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.io.*;
 
 import de.fhpotsdam.unfolding.UnfoldingMap;
 import de.fhpotsdam.unfolding.data.Feature;
 import de.fhpotsdam.unfolding.data.GeoJSONReader;
 import de.fhpotsdam.unfolding.data.PointFeature;
+import de.fhpotsdam.unfolding.data.ShapeFeature;
 import de.fhpotsdam.unfolding.geo.Location;
 import de.fhpotsdam.unfolding.marker.AbstractShapeMarker;
 import de.fhpotsdam.unfolding.marker.Marker;
 import de.fhpotsdam.unfolding.marker.MultiMarker;
+import de.fhpotsdam.unfolding.marker.SimpleLinesMarker;
 import de.fhpotsdam.unfolding.providers.Google;
 import de.fhpotsdam.unfolding.providers.MBTilesMapProvider;
 import de.fhpotsdam.unfolding.utils.MapUtils;
@@ -21,8 +22,8 @@ import processing.core.PApplet;
 /** EarthquakeCityMap
  * An application with an interactive map displaying earthquake data.
  * Author: UC San Diego Intermediate Software Development MOOC team
- * @author Your name here
- * Date: July 17, 2015
+ * @author Steven Kenyon
+ * Date: April 20, 2016
  * */
 public class EarthquakeCityMap extends PApplet {
 	
@@ -49,6 +50,7 @@ public class EarthquakeCityMap extends PApplet {
 	// The files containing city names and info and country names and info
 	private String cityFile = "city-data.json";
 	private String countryFile = "countries.geo.json";
+	private String airportFile = "airports.dat";
 	
 	// The map
 	private UnfoldingMap map;
@@ -57,6 +59,9 @@ public class EarthquakeCityMap extends PApplet {
 	private List<Marker> cityMarkers;
 	// Markers for each earthquake
 	private List<Marker> quakeMarkers;
+	// Markers for each airport
+	private List<Marker> airportList;
+	private List<Marker> routeList;
 
 	// A List of country markers
 	private List<Marker> countryMarkers;
@@ -99,7 +104,77 @@ public class EarthquakeCityMap extends PApplet {
 		for(Feature city : cities) {
 		  cityMarkers.add(new CityMarker(city));
 		}
+		
+		// Read in cities in California
+		String cityFileName = "cities-california.csv";
+		HashMap<String, String> caCityHashMap = null;
+		try 
+		{
+			caCityHashMap = parseCityFile(cityFileName);
+		} catch (IOException e) {
+			// Done Auto-generated catch block
+			e.printStackTrace();
+		}
 	    
+		// 		Read in the Airport Data
+		// get features from airport data
+		List<PointFeature> airportFeatures = ParseFeed.parseAirports(this, "airports.dat");
+		
+		// list for markers, hashmap for quicker access when matching with routes
+		airportList = new ArrayList<Marker>();
+		HashMap<Integer, Location> airports = new HashMap<Integer, Location>();
+		
+		// create markers from features
+		for(PointFeature feature : airportFeatures) {
+			AirportMarker m = new AirportMarker(feature);
+	
+			m.setRadius(5);
+			//if(airportList.)
+			String city = (String) m.getProperty("city");
+			city = city.substring(1,  city.length() - 1);
+			String country = (String) feature.getProperty("country");
+			country = country.substring(1,  country.length() - 1);
+			
+			if(caCityHashMap.containsKey(city) && country.equals("United States")
+					&& isInCalifornia(feature, city)) 
+			{
+				//System.out.println(city);
+				System.out.println(feature.getProperties());
+				
+				airportList.add(m);
+				// put airport in hashmap with OpenFlights unique id for key
+				airports.put(Integer.parseInt(feature.getId()), feature.getLocation());
+			}
+		}
+
+		// parse route data
+		List<ShapeFeature> routes = ParseFeed.parseRoutes(this, "routes.dat");
+		routeList = new ArrayList<Marker>();
+		for(ShapeFeature route : routes) {
+			
+			// get source and destination airportIds
+			int source = Integer.parseInt((String)route.getProperty("source"));
+			int dest = Integer.parseInt((String)route.getProperty("destination"));
+			
+			// get locations for airports on route
+			if(airports.containsKey(source) && airports.containsKey(dest)) {
+				route.addLocation(airports.get(source));
+				route.addLocation(airports.get(dest));
+			}
+			
+			SimpleLinesMarker routeTweenAirports = new SimpleLinesMarker(route.getLocations(), route.getProperties());
+		
+			//System.out.println(routeTweenAirports.getProperties());
+			
+			//UNCOMMENT IF YOU WANT TO SEE ALL ROUTES
+			routeList.add(routeTweenAirports);
+		}
+		//UNCOMMENT IF YOU WANT TO SEE ALL ROUTES
+		map.addMarkers(routeList);
+		
+		map.addMarkers(airportList);
+		
+		
 		//     STEP 3: read in earthquake RSS feed
 	    List<PointFeature> earthquakes = ParseFeed.parseEarthquake(this, earthquakesURL);
 	    quakeMarkers = new ArrayList<Marker>();
@@ -117,28 +192,109 @@ public class EarthquakeCityMap extends PApplet {
 
 	    // could be used for debugging
 	    printQuakes();
-	 		
+	    sortAndPrint(60);
 	    // (3) Add markers to map
 	    //     NOTE: Country markers are not added to the map.  They are used
 	    //           for their geometric properties
 	    map.addMarkers(quakeMarkers);
 	    map.addMarkers(cityMarkers);
-	    
-	    
 	}  // End setup
 	
+	/**
+	 * Point can roughly be found within the State of California.
+	 * There are only a few airports in cities having a name that 
+	 * is also found within California so this checks a rough 
+	 * estimate of GPS coordinates.  
+	 * @param pf
+	 * @return true when located within CA
+	 */
+	public boolean isInCalifornia(PointFeature pf, String cityName)
+	{ 	// TODO: finish Method
+		boolean isIn = false;
+		Location loc = pf.getLocation();
+		System.out.println(loc);
+		float latitude = loc.getLat();
+		float longitude = loc.getLon();
+		System.out.println("Lat: " + latitude + " Long: " + longitude);
+		float oceanLon = (float) -124.48;
+		float topOfCaLat = (float) 42.007;
+		float bottomOfCaLat = (float) 32.5146;
+		float rightMostCaLon = (float) -114.0733;
+		
+		boolean isRightOfOcean = false;
+		if(longitude > oceanLon) isRightOfOcean = true;
+		boolean isNorthOfMexico = false;
+		if(latitude > bottomOfCaLat) isNorthOfMexico = true;
+		boolean isSouthOfOregon = false;
+		if(latitude < topOfCaLat) isSouthOfOregon = true;
+		boolean isLeftOfAz = false;
+		if(longitude < rightMostCaLon) isLeftOfAz = true;
+		//boolean  = false;
+		//if(longitude > bottomRightLon && longitude > bottomRightLon) isNorthOfMexico = true;
+		if(isRightOfOcean && isNorthOfMexico && isSouthOfOregon && isLeftOfAz)
+		{
+			System.out.println(cityName + " is Right Of Ocean, North of Mexico, south of Oregon and West of AZ.");
+			isIn = true;
+		}	
+		
+		return isIn;
+	}
 	
 	public void draw() {
 		background(0);
 		map.draw();
-		addKey();
+		addKey();		
+	}
+	//Builds HashMap of cities from file
+	//file only has cities in California
+	private HashMap<String, String>parseCityFile(String fileName) throws IOException
+	{
+		HashMap<String, String> outputHash= new HashMap<String, String>();
+		String line = null;
+		try 
+		{
+			FileReader fr = new FileReader(fileName);
+			BufferedReader bfr = new BufferedReader(fr);
+			
+			while((line = bfr.readLine()) != null)
+			{
+				if(!outputHash.containsKey(line)) outputHash.put(line, line);					
+			}	
+		} catch (IOException e) {
+			// Auto-generated catch block
+			e.printStackTrace();
+		}
 		
+		return outputHash;		
 	}
 	
-	
-	// TODO: Add the method:
-	//   private void sortAndPrint(int numToPrint)
+	// Done: Add the method:
 	// and then call that method from setUp
+	private void sortAndPrint(int numToPrint)
+	{
+		//Create new array from list of quake markers
+		//(List<EarthquakeMarker>) quakeMarkers.toArray(new EarthquakeMarker[quakeMarkers.size()]);
+		EarthquakeMarker[] qMarkerArray = copyQuakeMarkersToQMarkerArray(quakeMarkers);
+		//Collections.sort(qMarkerArray);
+		Arrays.sort(qMarkerArray);
+		int timesToLoop = numToPrint;
+		if(timesToLoop > qMarkerArray.length) timesToLoop = qMarkerArray.length;
+		
+		for(int i = 0; i < timesToLoop; i++)
+		{
+			System.out.println(qMarkerArray[i]);
+		}
+	}
+	
+	private EarthquakeMarker[] copyQuakeMarkersToQMarkerArray(List<Marker> inQuakeMarkers)
+	{
+		EarthquakeMarker[] outQuakeMarkers = new EarthquakeMarker[inQuakeMarkers.size()];
+		for(int i = 0; i < inQuakeMarkers.size(); i++)
+		{
+			outQuakeMarkers[i] = (EarthquakeMarker) inQuakeMarkers.get(i);
+		}
+		return outQuakeMarkers;		
+	}
 	
 	/** Event handler that gets called automatically when the 
 	 * mouse moves.
@@ -305,6 +461,8 @@ public class EarthquakeCityMap extends PApplet {
 		ellipse(xbase+35, ybase+160, 12, 12);
 		fill(color(255, 0, 0));
 		ellipse(xbase+35, ybase+180, 12, 12);
+		fill(11);
+		ellipse(xbase+35, ybase+220, 5, 5);
 		
 		textAlign(LEFT, CENTER);
 		fill(0, 0, 0);
@@ -313,6 +471,8 @@ public class EarthquakeCityMap extends PApplet {
 		text("Deep", xbase+50, ybase+180);
 
 		text("Past hour", xbase+50, ybase+200);
+		text("Airport", xbase+50, ybase+220);
+		
 		
 		fill(255, 255, 255);
 		int centerx = xbase+35;
